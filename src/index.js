@@ -149,11 +149,7 @@ async function engineCorrida(jogadores) {
         const msgm = vencedor.nome == "" ? "Empate!" : `${vencedor.nome} marcou um ponto!`;
         console.log(msgm)
         console.log("---------------------------------")
-
-
-
-
-    }
+   }
 }
 
 async function selecionarBloco() {
