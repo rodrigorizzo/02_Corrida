@@ -1,8 +1,4 @@
-const { resolve } = require('path');
-
-let player1 = {};
-
-let player2 = {};
+let jogadores = [];
 
 const personagens = [
     {
@@ -64,8 +60,7 @@ async function selecionarPersonagem() {
 
                 // verdadeiro se personagemSelecionado não estiver vazio
                 if (personagemSelecionado) {
-                    player1 = { ...personagemSelecionado };
-
+                    jogadores.push(personagemSelecionado);
 
                     // selecionar aleatoriamente o player 2 diferente do player 1
                     let p2Index;
@@ -75,9 +70,10 @@ async function selecionarPersonagem() {
                         personagens[p2Index].nome.toLowerCase() === selecionado.toLowerCase()
                     );
 
-                    player2 = {...personagens[p2Index]};
+                    jogadores.push(personagens[p2Index]);
+
                     console.log(
-                        `Você selecionou ${player1.nome} e seu oponente é ${player2.nome}`
+                        `Você selecionou ${jogadores[0].nome} e seu oponente é ${jogadores[1].nome}`
                     );
                     resolve();
                 } else {
@@ -91,14 +87,115 @@ async function selecionarPersonagem() {
     })
 }
 
+async function rolarDados() {
+    return Math.floor(Math.random() * 6) + 1;
+}
+
 async function inicioCorrida() {
-    console.log(`🏁🚦 Corrida entre ${player1.nome} e ${player2.nome} começando...\n`);
+    console.log(`🏁🚦 Corrida entre ${jogadores[0].nome} e ${jogadores[1].nome} começando...\n`);
+}
+
+
+async function engineCorrida(jogadores) {
+    for (let round = 1; round <= 5; round++) {
+        let bloco = await selecionarBloco();
+
+        const relacaoBlocoHabilidade = {
+            "RETA": "velocidade",
+            "CURVA": "manobrabilidade",
+            "CONFRONTO": "poder"
+        }
+
+        console.log(`Rodada ${round}`);
+        console.log(`Bloco: ${bloco}`);
+
+        // as info necessarias do player estao em um array que pode ser expandido
+        let infoPlayers = [];
+        for (const p of jogadores) {
+            const dado = await rolarDados();
+            const tipoModificador = relacaoBlocoHabilidade[bloco];
+
+            infoPlayers.push({
+                nome: p.nome,
+                resultadoDado: dado,
+                modificador: p[tipoModificador],
+                tipoModificador: tipoModificador,
+                get pontuacao() {
+                    return this.resultadoDado + this.modificador
+                }
+            })
+        }
+
+        let vencedor = { nome: "", pontuacao: 0 }
+
+        infoPlayers.forEach(p => {
+            console.log(
+                `${p.nome} 🎲 rolou um dado de ${p.tipoModificador} ${p.resultadoDado} + ${p.modificador} = ${p.pontuacao}`
+            );
+
+            if (vencedor.pontuacao < p.pontuacao) {
+                vencedor.nome = p.nome;
+                vencedor.pontuacao = p.pontuacao;
+            } else if (vencedor.pontuacao == p.pontuacao) {
+                vencedor.nome = "";
+            }
+        })
+
+
+        jogadores.find(jogador => {
+            if (jogador.nome == vencedor.nome) jogador.pontos++;
+        })
+
+        const msgm = vencedor.nome == "" ? "Empate!" : `${vencedor.nome} marcou um ponto!`;
+        console.log(msgm)
+        console.log("---------------------------------")
+
+
+
+
+    }
+}
+
+async function selecionarBloco() {
+    const random = Math.random();
+
+    switch (true) {
+        case random < 0.33:
+            return "RETA";
+        case random < 0.66:
+            return "CURVA";
+        default:
+            return "CONFRONTO"
+    }
+}
+
+async function declararVencedor(jogadores) {
+    let vencedor = { nome: "", pontos: 0 }
+
+    for (const j of jogadores) {
+        console.log(
+            `Pontos de ${j.nome}: ${j.pontos} `
+        )
+        if (vencedor.pontos < j.pontos) {
+            vencedor.nome = j.nome;
+            vencedor.pontos = j.pontos;
+        } else if (vencedor.pontos == j.pontos) {
+            vencedor.nome = "";
+        }
+    }
+
+    const msgm = vencedor.nome == "" ? "Empate!" : `${vencedor.nome} Ganhou!🥇`;
+    console.log(`\n\n\n${msgm}`)
+
+
 }
 
 
 (async function main() {
     await selecionarPersonagem();
     await inicioCorrida();
+    await engineCorrida(jogadores);
+    await declararVencedor(jogadores);
     readline.close();
 })();
 
